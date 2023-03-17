@@ -2,7 +2,7 @@ import Combine
 import Foundation
 
 /*:
-delay可以用来延迟时间序列 2023-03-17(Fri) 20:59:52 
+delay可以用来延迟时间序列 2023-03-17(Fri) 20:59:52
 */
 
 var subscriptions = [AnyCancellable]()
