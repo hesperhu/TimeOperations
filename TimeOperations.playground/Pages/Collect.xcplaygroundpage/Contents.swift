@@ -2,36 +2,76 @@ import Combine
 import SwiftUI
 import PlaygroundSupport
 
-<# Add your code here #>
-
-//: [Next](@next)
 /*:
- Copyright (c) 2021 Razeware LLC
- 
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
- 
- The above copyright notice and this permission notice shall be included in
- all copies or substantial portions of the Software.
- 
- Notwithstanding the foregoing, you may not use, copy, modify, merge, publish,
- distribute, sublicense, create a derivative work, and/or sell copies of the
- Software in any work that is designed, intended, or marketed for pedagogical or
- instructional purposes related to programming, coding, application development,
- or information technology.  Permission for such use, copying, modification,
- merger, publication, distribution, sublicensing, creation of derivative works,
- or sale is expressly withheld.
- 
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- THE SOFTWARE.
- */
+collect(.byTime())可以按指定的时间跨度对消息进行分组 2023-03-17(Fri) 21:40:19
+*/
 
+var subscriptions = [AnyCancellable]()
+let valuesPerscond = 1.0
+let collectTimeStride = 2.5
+
+/*:
+创建源序列，以及对应的消息分组序列 2023-03-17(Fri) 21:42:18
+*/
+
+let sourcePublisher = PassthroughSubject<Date, Never>()
+let collectPublisher = sourcePublisher
+    .collect(.byTime(DispatchQueue.main, .seconds(collectTimeStride)))
+/*:
+定时器发送消息，与源序列对接 2023-03-17(Fri) 21:43:09
+*/
+Timer
+    .publish(every: 1.0/valuesPerscond, on: .main, in: .common)
+    .autoconnect()
+    .subscribe(sourcePublisher)
+    .store(in: &subscriptions)
+
+/*:
+使用UI展现两个队列 2023-03-17(Fri) 21:43:41
+*/
+
+let sourceTimeLine = TimelineView(title: "消息队列：")
+let collectedTimeline = TimelineView(title: "消息分组(\(collectTimeStride))")
+let view = VStack {
+    sourceTimeLine
+    collectedTimeline
+}
+PlaygroundPage.current.liveView = UIHostingController(rootView: view.frame(width: 300, height: 200))
+/*:
+ ![UI](hsw_2023-03-17_21.44.52.png)
+*/
+
+
+/*:
+使用print展现两个队列 2023-03-17(Fri) 21:44:10
+*/
+
+sourcePublisher.displayEvents(in: sourceTimeLine)
+collectPublisher.displayEvents(in: collectedTimeline)
+
+sourcePublisher
+    .sink { date in
+        print("source message: \(date)")
+    }
+    .store(in: &subscriptions)
+
+collectPublisher
+    .sink { dates in
+        print("colleted message: \(dates)")
+    }
+    .store(in: &subscriptions)
+
+/*:
+``` 控制台输出：
+ source message: 2023-03-17 13:44:43 +0000
+ source message: 2023-03-17 13:44:44 +0000
+ colleted message: [2023-03-17 13:44:43 +0000, 2023-03-17 13:44:44 +0000]
+ source message: 2023-03-17 13:44:45 +0000
+ source message: 2023-03-17 13:44:46 +0000
+ source message: 2023-03-17 13:44:47 +0000
+ colleted message: [2023-03-17 13:44:45 +0000, 2023-03-17 13:44:46 +0000, 2023-03-17 13:44:47 +0000]
+ source message: 2023-03-17 13:44:48 +0000
+ source message: 2023-03-17 13:44:49 +0000
+ colleted message: [2023-03-17 13:44:48 +0000, 2023-03-17 13:44:49 +0000]
+```
+*/
