@@ -2,36 +2,71 @@ import Combine
 import SwiftUI
 import PlaygroundSupport
 
-
-
-//: [Next](@next)
 /*:
- Copyright (c) 2021 Razeware LLC
- 
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
- 
- The above copyright notice and this permission notice shall be included in
- all copies or substantial portions of the Software.
- 
- Notwithstanding the foregoing, you may not use, copy, modify, merge, publish,
- distribute, sublicense, create a derivative work, and/or sell copies of the
- Software in any work that is designed, intended, or marketed for pedagogical or
- instructional purposes related to programming, coding, application development,
- or information technology.  Permission for such use, copying, modification,
- merger, publication, distribution, sublicensing, creation of derivative works,
- or sale is expressly withheld.
- 
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- THE SOFTWARE.
- */
+debouce可以消除队列中的抖动消息 2023-03-18(Sat) 11:06:22
+*/
 
+var subscriptions = [AnyCancellable]()
+/*:
+定义去抖动等待的时间
+*/
+let debounceTime = 1.3
+/*:
+ 1. 定义一个含有抖动消息的队列
+ 2. 定义一个去抖动的消息队列
+*/
+let passthroughPublisher = PassthroughSubject<String, Never>()
+let debouncedPublisher = passthroughPublisher
+    .debounce(for: .seconds(debounceTime), scheduler: DispatchQueue.main)
+    .share()
+/*:
+用UI显示两个消息队列
+*/
+let passthroughTimeLine = TimelineView(title: "原始消息：")
+let debouncedTimeLine = TimelineView(title: "过滤后的消息：")
+
+let view = VStack {
+    passthroughTimeLine
+    debouncedTimeLine
+}
+
+PlaygroundPage.current.liveView = UIHostingController(rootView: view.frame(width: 400, height: 300))
+
+passthroughPublisher.displayEvents(in: passthroughTimeLine)
+debouncedPublisher.displayEvents(in: debouncedTimeLine)
+/*:
+![](hsw_2023-03-18_11.03.32.png)
+*/
+
+/*:
+用控制台显示两个消息队列
+*/
+passthroughPublisher
+    .sink { value in
+        print("Source message[\(deltaTime)s]: \(value)")
+    }
+    .store(in: &subscriptions)
+
+debouncedPublisher
+    .sink { value in
+        print("Debounced message[\(deltaTime)s]: \(value)")
+    }
+    .store(in: &subscriptions)
+passthroughPublisher.feed(with: typingHelloWorld)
+/*:
+```
+ Source message[0.0s]: H
+ Source message[0.0s]: He
+ Source message[0.1s]: Hel
+ Source message[0.2s]: Hell
+ Source message[0.4s]: Hello
+ Source message[0.5s]: Hello
+ Debounced message[1.8s]: Hello
+ Source message[2.0s]: Hello W
+ Source message[2.1s]: Hello Wo
+ Source message[2.1s]: Hello Wor
+ Source message[2.4s]: Hello Worl
+ Source message[2.4s]: Hello World
+ Debounced message[3.7s]: Hello World
+ ```
+*/

@@ -91,7 +91,7 @@ collectPublisherCountLimit
 
 
 /*:
-``` 控制台输出：
+```控制台输出：
  source message: 2023-03-18 02:07:25 +0000
  source message: 2023-03-18 02:07:26 +0000
  collected count limited message: 2023-03-18 02:07:25 +0000
