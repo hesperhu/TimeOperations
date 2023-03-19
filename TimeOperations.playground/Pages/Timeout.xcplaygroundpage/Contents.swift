@@ -2,36 +2,83 @@ import Combine
 import SwiftUI
 import PlaygroundSupport
 
-<# Add your code here #>
+var subscriptions = [AnyCancellable]()
 
-//: [Next](@next)
 /*:
- Copyright (c) 2021 Razeware LLC
- 
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
- 
- The above copyright notice and this permission notice shall be included in
- all copies or substantial portions of the Software.
- 
- Notwithstanding the foregoing, you may not use, copy, modify, merge, publish,
- distribute, sublicense, create a derivative work, and/or sell copies of the
- Software in any work that is designed, intended, or marketed for pedagogical or
- instructional purposes related to programming, coding, application development,
- or information technology.  Permission for such use, copying, modification,
- merger, publication, distribution, sublicensing, creation of derivative works,
- or sale is expressly withheld.
- 
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- THE SOFTWARE.
- */
+使用timeout，可以触发消息队列结束，或者发送错误 2023-03-19(Sun) 11:13:28
+*/
 
+enum TimeOutError: Error {
+    case timeout
+}
+
+let timeoutTime = 5.0
+/*:
+创建定时结束的消息队列 2023-03-19(Sun) 11:14:14
+*/
+let source = PassthroughSubject<Void, Never>()
+
+let timeoutSubject = source.timeout(.seconds(timeoutTime), scheduler: DispatchQueue.main)
+/*:
+创建定时错误的消息队列 2023-03-19(Sun) 11:14:33
+*/
+let sourceWithFailure = PassthroughSubject<Void, TimeOutError>()
+let timeoutWithFailure = sourceWithFailure.timeout(.seconds(timeoutTime), scheduler: DispatchQueue.main, customError: {.timeout})
+
+/*:
+UI显示两个消息队列 2023-03-19(Sun) 11:14:58
+*/
+
+let timeline = TimelineView(title: "按钮")
+let timelineWithFailure = TimelineView(title: "按钮(带错误处理)")
+
+
+let view = VStack{
+    Button("\(timeoutTime)秒内按按钮") {
+        source.send()
+    }
+    timeline
+    
+    Button("\(timeoutTime)秒内按按钮") {
+        sourceWithFailure.send()
+    }
+    timelineWithFailure
+}
+
+PlaygroundPage.current.liveView = UIHostingController(rootView: view.frame(width: 300, height: 300))
+
+timeoutSubject.displayEvents(in: timeline)
+timeoutWithFailure.displayEvents(in: timelineWithFailure)
+
+/*:
+![](hsw_2023-03-19_10.51.46.png)
+*/
+
+/*:
+控制台显示两个队列 2023-03-19(Sun) 11:15:34
+*/
+
+timeoutSubject
+    .sink { value in
+        print("消息队列完成: \(value)")
+    } receiveValue: { value in
+        print("消息队列数据: \(value)")
+    }
+    .store(in: &subscriptions)
+
+timeoutWithFailure
+    .sink { value in
+        print("消息队列(带错误处理)完成: \(value)")
+    } receiveValue: { value in
+        print("消息队列(带错误处理)数据: \(value)")
+    }
+    .store(in: &subscriptions)
+
+/*:
+```
+ 消息队列数据: ()
+ 消息队列(带错误处理)数据: ()
+ 消息队列完成: finished
+ 消息队列(带错误处理)完成: failure(__lldb_expr_21.TimeOutError.timeout)
+ ```
+*/
