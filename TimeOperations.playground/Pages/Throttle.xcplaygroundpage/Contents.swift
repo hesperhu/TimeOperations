@@ -58,19 +58,19 @@ source
 
 throttle
     .sink { value in
-        print("最早节流消息(+\(deltaTime)s)：\(value)")
+        print("..最早节流消息(+\(deltaTime)s)：\(value)")
     }
     .store(in: &subscriptions)
 
 throttleLatest
     .sink { value in
-        print("最新节流消息(+\(deltaTime)s)：\(value)")
+        print("..最新节流消息(+\(deltaTime)s)：\(value)")
     }
     .store(in: &subscriptions)
 
 debounced
     .sink { value in
-        print("去抖动消息(+\(deltaTime)s)：\(value)")
+        print("->去抖动消息(+\(deltaTime)s)：\(value)")
     }
     .store(in: &subscriptions)
 
@@ -79,26 +79,26 @@ source.feed(with: typingHelloWorld)
 /*:
 ```
  消息源(+0.0s)：H
- 最早节流消息(+0.0s)：H
- 最新节流消息(+0.0s)：H
+ ..最新节流消息(+0.0s)：H
+ ..最早节流消息(+0.0s)：H
  消息源(+0.0s)：He
  消息源(+0.1s)：Hel
  消息源(+0.2s)：Hell
- 消息源(+0.5s)：Hello
+ 消息源(+0.4s)：Hello
  消息源(+0.6s)：Hello
- 最早节流消息(+1.1s)：He
- 最新节流消息(+1.1s)：Hello
- 去抖动消息(+1.6s)：Hello
+ ..最新节流消息(+1.0s)：Hello
+ ..最早节流消息(+1.0s)：He
+ ->去抖动消息(+1.6s)：Hello
  消息源(+2.0s)：Hello W
- 消息源(+2.1s)：Hello Wo
- 最早节流消息(+2.1s)：Hello W
- 最新节流消息(+2.1s)：Hello Wo
+ 消息源(+2.0s)：Hello Wo
+ ..最新节流消息(+2.0s)：Hello Wo
+ ..最早节流消息(+2.0s)：Hello W
  消息源(+2.2s)：Hello Wor
- 消息源(+2.4s)：Hello Worl
+ 消息源(+2.5s)：Hello Worl
  消息源(+2.5s)：Hello World
- 最早节流消息(+3.1s)：Hello Wor
- 最新节流消息(+3.1s)：Hello World
- 去抖动消息(+3.5s)：Hello World
+ ..最新节流消息(+3.1s)：Hello World
+ ..最早节流消息(+3.1s)：Hello Wor
+ ->去抖动消息(+3.5s)：Hello World
 
  ```
 */
